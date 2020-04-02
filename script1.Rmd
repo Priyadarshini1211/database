@@ -1,0 +1,72 @@
+---
+title: "COVID cases in R"
+output: html_notebook
+---
+# COVID data import
+ 
+ This is where we get the data : https://www.ecdc.europa.eu/en/geographical-distribution-2019-ncov-cases
+ 
+ 
+```{r}
+#these libraries need to be loaded
+library(utils) 
+library(httr) 
+
+#download the dataset from the ECDC website to a local temporary file
+
+GET("https://opendata.ecdc.europa.eu/covid19/casedistribution/csv", authenticate(":", ":", type="ntlm"), write_disk(tf <- tempfile(fileext = ".csv"))) 
+
+#read the Dataset sheet into “R”. The dataset will be called "data". 
+
+df <- read.csv(tf)
+
+```
+
+#COVID data exploration
+
+```{r}
+
+covid_death_total <- sum(df$deaths)
+
+```
+
+There have been `r covid_death_total` death since `r Sys.Date()`.
+
+The features that we have are : `r names(df)`
+
+
+```{r}
+library(dplyr)
+library(DT)
+library(kableExtra)
+
+
+edf <- df %>% group_by(countriesAndTerritories)%>%
+  mutate(deathRate = sum(deaths)/sum(cases))
+
+# kable(edf)%>%
+#   kable_styling(bootstrap_options = "striped",full_width = F)
+
+datatable(edf, extensions = 'Buttons', options = list(dom = 'Bfrtip',
+buttons = c('copy', 'csv', 'excel', 'pdf', 'print')
+)
+)
+  
+```
+#Our First Graph
+
+```{r}
+library(ggplot2)
+
+edf %>% filter(deaths > 100) %>%
+group_by(countriesAndTerritories) %>%
+summarise(Cases_Total = sum(cases), Deaths_Total = max(deaths)) %>%
+ggplot(aes(countriesAndTerritories)) +
+#geom_point(aes(y = Cases_Total, color = "yellow")) +
+geom_point(aes(y = Deaths_Total, color = "red")) +
+coord_flip()
+```
+
+
+
+ 
